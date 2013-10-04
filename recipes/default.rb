@@ -13,7 +13,7 @@ end
 
 # Setup SSH -------------------------------------------------------------------
 
-execute "generate ssh keys for #{hduser}." do
+execute "generate ssh keys for #{hduser}" do
   user hduser
   command <<-SHELL
     ssh-keygen -t rsa -q -f /home/#{hduser}/.ssh/id_rsa -P ""
@@ -26,16 +26,12 @@ end
 
 config_file = "/etc/sysctl.conf"
 
-lines = <<-COMMANDS
-net.ipv6.conf.all.disable_ipv6 = 1
-net.ipv6.conf.default.disable_ipv6 = 1
-net.ipv6.conf.lo.disable_ipv6 = 1
-COMMANDS
-
-lines.each_line do |line|
+["net.ipv6.conf.all.disable_ipv6 = 1",
+ "net.ipv6.conf.default.disable_ipv6 = 1",
+ "net.ipv6.conf.lo.disable_ipv6 = 1"].each do |line|
   execute "add #{line} to #{config_file}" do
     command "echo '#{line}' >> #{config_file}"
-    only_if { File.readlines(config_file).detect { |l| l.include?(line)}.nil? }
+    only_if { File.readlines(config_file).detect { |l| l.include?(line) }.nil? }
   end
 end
 
@@ -52,3 +48,24 @@ dpkg_package 'install hadoop deb package' do
   source "/tmp/#{deb_file_name}"
   action :install
 end
+
+# Set JAVA_HOME to config files -----------------------------------------------
+
+["/home/#{hduser}/.bashrc", "/etc/hadoop/hadoop-env.sh"].each do |file|
+  bash "append JAVA_HOME to #{file}" do
+    user hduser
+    code <<-EOS
+      echo "export JAVA_HOME=#{ENV['JAVA_HOME']}" >> /home/#{hduser}/.bashrc
+    EOS
+    not_if "grep -q JAVA_HOME /home/#{hduser}/.bashrc"
+  end
+end
+
+# Format namenode -------------------------------------------------------------
+
+#execute "format namenode" do
+#  command "hadoop namenode -format"
+#  user hduser
+#  action :run
+#  #only_if { ::Dir["#{namenode_dir}/*"].empty? }
+#end

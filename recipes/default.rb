@@ -38,3 +38,17 @@ lines.each_line do |line|
     only_if { File.readlines(config_file).detect { |l| l.include?(line)}.nil? }
   end
 end
+
+# Install hadoop deb package --------------------------------------------------
+
+deb_file_name = "hadoop_1.0.3-1_x86_64.deb"
+
+remote_file "/tmp/#{deb_file_name}" do
+  source "http://archive.apache.org/dist/hadoop/core/hadoop-1.0.3/#{deb_file_name}"
+  action :create_if_missing
+end
+
+dpkg_package 'install hadoop deb package' do
+  source "/tmp/#{deb_file_name}"
+  action :install
+end

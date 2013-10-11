@@ -1,4 +1,5 @@
-hduser = 'hduser'
+hduser = "hduser"
+hdgroup = "hadoop"
 
 # Create a user and a group ---------------------------------------------------
 
@@ -7,7 +8,7 @@ group "hadoop"
 user hduser do
   supports :manage_home => true
   home "/home/#{hduser}"
-  gid "hadoop"
+  gid hdgroup
   shell "/bin/bash"
 end
 
@@ -61,11 +62,32 @@ end
   end
 end
 
+# Hadoop dir for hdfs ---------------------------------------------------------
+
+directory "/var/hadoop/tmp" do
+  owner hduser
+  group hdgroup
+  mode 750
+  recursive true
+  action :create
+end
+
+# Hadoop config files ---------------------------------------------------------
+
+["core-site.xml", "hdfs-site.xml", "mapred-site.xml"].each do |file|
+  template "#{ENV['HADOOP_CONF_DIR']}/#{file}" do
+    source file
+    mode 0644
+    owner "root"
+    group "root"
+  end
+end
+
 # Format namenode -------------------------------------------------------------
 
-#execute "format namenode" do
-#  command "hadoop namenode -format"
-#  user hduser
-#  action :run
-#  #only_if { ::Dir["#{namenode_dir}/*"].empty? }
-#end
+execute "format namenode" do
+  command "hadoop namenode -format"
+  user hduser
+  action :run
+  not_if { ::File.exists?("/var/hadoop/tmp/dfs/name/") }
+end

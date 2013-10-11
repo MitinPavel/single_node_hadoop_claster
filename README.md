@@ -13,7 +13,12 @@ Platform
  
 Tested on:
 
-* Ubuntu 12.04 Precise 3.2.0-23-generic x86_64
+* Linux precise64 3.2.0-23-generic #36-Ubuntu x86_64 GNU/Linux
+
+Resources
+=========
+
+* http://hadoop.apache.org/docs/stable/single_node_setup.html
 
 License and Author
 ==================

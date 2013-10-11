@@ -91,3 +91,23 @@ execute "format namenode" do
   action :run
   not_if { ::File.exists?("/var/hadoop/tmp/dfs/name/") }
 end
+
+# Start hadoop demons ---------------------------------------------------------
+
+execute "start all Hadoop services" do
+  command "/usr/sbin/start-all.sh"
+  user hduser
+  action :run
+  not_if { %w(NameNode SecondaryNameNode DataNode JobTracker TaskTracker).any? { |d| `jps`.match(/#{d}/) }}
+end
+
+#hduser@precise64:~$ /usr/sbin/start-all.sh
+#starting namenode, logging to /var/log/hadoop/hduser/hadoop-hduser-namenode-precise64.out
+#The authenticity of host 'localhost (127.0.0.1)' can't be established.
+#ECDSA key fingerprint is c7:91:15:37:d6:af:84:63:66:0f:42:e4:2b:48:7b:dc.
+#Are you sure you want to continue connecting (yes/no)? yes
+#localhost: Warning: Permanently added 'localhost' (ECDSA) to the list of known hosts.
+#localhost: starting datanode, logging to /var/log/hadoop/hduser/hadoop-hduser-datanode-precise64.out
+#localhost: starting secondarynamenode, logging to /var/log/hadoop/hduser/hadoop-hduser-secondarynamenode-precise64.out
+#starting jobtracker, logging to /var/log/hadoop/hduser/hadoop-hduser-jobtracker-precise64.out
+#localhost: starting tasktracker, logging to /var/log/hadoop/hduser/hadoop-hduser-tasktracker-precise64.out

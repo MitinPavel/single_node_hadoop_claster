@@ -23,6 +23,16 @@ execute "generate ssh keys for #{hduser}" do
   not_if { File.exist?("/home/#{hduser}/.ssh/id_rsa.pub") }
 end
 
+known_hosts_file = "/home/#{hduser}/.ssh/known_hosts"
+execute "add localhost to known_hosts" do
+  cwd "/home/#{hduser}"
+  command <<-SHELL
+    ssh-keyscan localhost >> #{known_hosts_file}
+    chown #{hduser} #{known_hosts_file}
+  SHELL
+  not_if "grep -q \"`ssh-keyscan localhost`\" #{known_hosts_file}"
+end
+
 # Disable ipv6 ----------------------------------------------------------------
 
 config_file = "/etc/sysctl.conf"

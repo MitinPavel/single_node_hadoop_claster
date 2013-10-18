@@ -25,6 +25,7 @@ end
 
 known_hosts_file = "/home/#{hduser}/.ssh/known_hosts"
 execute "add localhost to known_hosts" do
+  user hduser
   cwd "/home/#{hduser}"
   command <<-SHELL
     ssh-keyscan localhost >> #{known_hosts_file}
@@ -60,15 +61,35 @@ dpkg_package 'install hadoop deb package' do
   action :install
 end
 
-# Set JAVA_HOME to config files -----------------------------------------------
+# Set permissions for hadoop group --------------------------------------------
 
-["/home/#{hduser}/.bashrc", "/etc/hadoop/hadoop-env.sh"].each do |file|
-  bash "append JAVA_HOME to #{file}" do
-    user hduser
-    code <<-EOS
-      echo "export JAVA_HOME=#{ENV['JAVA_HOME']}" >> /home/#{hduser}/.bashrc
-    EOS
-    not_if "grep -q JAVA_HOME /home/#{hduser}/.bashrc"
+%w(
+  /etc/hadoop
+
+  /usr/bin/hadoop
+
+  /usr/etc/hadoop
+
+  /usr/sbin/hadoop-daemon.sh
+  /usr/sbin/hadoop-setup-applications.sh
+  /usr/sbin/hadoop-daemons.sh
+  /usr/sbin/hadoop-setup-hdfs.sh
+  /usr/sbin/hadoop-setup-single-node.sh
+  /usr/sbin/update-hadoop-env.sh
+  /usr/sbin/hadoop-validate-setup.sh
+  /usr/sbin/hadoop-create-user.sh
+  /usr/sbin/hadoop-setup-conf.sh
+
+  /usr/include/hadoop
+
+  /usr/libexec/hadoop-config.sh
+
+  /usr/share/hadoop/
+  /usr/share/doc/hadoop
+).each do |name|
+  execute "change group to #{hdgroup} for #{name}" do
+    user "root"
+    command "chown :#{hdgroup} -R #{name.strip}"
   end
 end
 
@@ -84,13 +105,33 @@ end
 
 # Hadoop config files ---------------------------------------------------------
 
-["core-site.xml", "hdfs-site.xml", "mapred-site.xml"].each do |file|
-  template "#{ENV['HADOOP_CONF_DIR']}/#{file}" do
+["hadoop-env.sh", "core-site.xml", "hdfs-site.xml", "mapred-site.xml"].each do |file|
+  template "/etc/hadoop/#{file}" do
     source file
     mode 0644
     owner "root"
-    group "root"
+    group hdgroup
   end
+end
+
+# Set JAVA_HOME ---------------------------------------------------------------
+
+java_home = node['single_node_hadoop_claster']['java']['java_home']
+
+bash "append JAVA_HOME to /home/#{hduser}/.bashrc" do
+  user hduser
+  code <<-EOS
+      echo "export JAVA_HOME=#{node['single_node_hadoop_claster']['java']['java_home']}" >> /home/#{hduser}/.bashrc
+  EOS
+  not_if "grep -q JAVA_HOME /home/#{hduser}/.bashrc"
+end
+
+bash "append JAVA_HOME to /etc/hadoop/hadoop-env.sh" do
+  user "root"
+  code <<-EOS
+      echo "export JAVA_HOME=#{node['single_node_hadoop_claster']['java']['java_home']}" >> /etc/hadoop/hadoop-env.sh
+  EOS
+  not_if "grep -q JAVA_HOME /etc/hadoop/hadoop-env.sh"
 end
 
 # Format namenode -------------------------------------------------------------
@@ -108,16 +149,5 @@ execute "start all Hadoop services" do
   command "/usr/sbin/start-all.sh"
   user hduser
   action :run
-  not_if { %w(NameNode SecondaryNameNode DataNode JobTracker TaskTracker).any? { |d| `jps`.match(/#{d}/) }}
+  not_if { %w(NameNode SecondaryNameNode DataNode JobTracker TaskTracker).any? { |d| `jps`.match(/#{d}/) } }
 end
-
-#hduser@precise64:~$ /usr/sbin/start-all.sh
-#starting namenode, logging to /var/log/hadoop/hduser/hadoop-hduser-namenode-precise64.out
-#The authenticity of host 'localhost (127.0.0.1)' can't be established.
-#ECDSA key fingerprint is c7:91:15:37:d6:af:84:63:66:0f:42:e4:2b:48:7b:dc.
-#Are you sure you want to continue connecting (yes/no)? yes
-#localhost: Warning: Permanently added 'localhost' (ECDSA) to the list of known hosts.
-#localhost: starting datanode, logging to /var/log/hadoop/hduser/hadoop-hduser-datanode-precise64.out
-#localhost: starting secondarynamenode, logging to /var/log/hadoop/hduser/hadoop-hduser-secondarynamenode-precise64.out
-#starting jobtracker, logging to /var/log/hadoop/hduser/hadoop-hduser-jobtracker-precise64.out
-#localhost: starting tasktracker, logging to /var/log/hadoop/hduser/hadoop-hduser-tasktracker-precise64.out

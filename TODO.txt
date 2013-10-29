@@ -1,0 +1,2 @@
+* Add node['single_node_hadoop_claster']['java']['java_home'] to README.
+* Start all Hadoop services (start-all.sh) as a part of the default recipe.

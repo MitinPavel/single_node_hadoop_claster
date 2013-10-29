@@ -1,15 +1,16 @@
-hduser = "hduser"
-hdgroup = "hadoop"
+hduser = node['single_node_hadoop_claster']['user']
+hdgroup = node['single_node_hadoop_claster']['group']
 
 # Create a user and a group ---------------------------------------------------
-
-group "hadoop"
 
 user hduser do
   supports :manage_home => true
   home "/home/#{hduser}"
-  gid hdgroup
   shell "/bin/bash"
+end
+
+group hdgroup do
+  members hduser
 end
 
 # Setup SSH -------------------------------------------------------------------
@@ -80,6 +81,18 @@ end
   /usr/sbin/hadoop-create-user.sh
   /usr/sbin/hadoop-setup-conf.sh
 
+  /usr/sbin/start-all.sh
+  /usr/sbin/start-balancer.sh
+  /usr/sbin/start-dfs.sh
+  /usr/sbin/start-jobhistoryserver.sh
+  /usr/sbin/start-mapred.sh
+
+  /usr/sbin/stop-all.sh
+  /usr/sbin/stop-balancer.sh
+  /usr/sbin/stop-dfs.sh
+  /usr/sbin/stop-jobhistoryserver.sh
+  /usr/sbin/stop-mapred.sh
+
   /usr/include/hadoop
 
   /usr/libexec/hadoop-config.sh
@@ -93,17 +106,22 @@ end
   end
 end
 
-# Hadoop dir for hdfs ---------------------------------------------------------
+execute "change permissions for /usr/share/hadoop" do
+  user "root"
+  command "chmod -R g+rwx /usr/share/hadoop"
+end
 
-directory "/var/hadoop/tmp" do
+# Create hadoop dir for hdfs --------------------------------------------------
+
+directory "/var/hadoop" do
   owner hduser
   group hdgroup
-  mode 750
+  mode 0770
   recursive true
   action :create
 end
 
-# Hadoop config files ---------------------------------------------------------
+# Setup hadoop config files ---------------------------------------------------
 
 ["hadoop-env.sh", "core-site.xml", "hdfs-site.xml", "mapred-site.xml"].each do |file|
   template "/etc/hadoop/#{file}" do
@@ -116,12 +134,11 @@ end
 
 # Set JAVA_HOME ---------------------------------------------------------------
 
-java_home = node['single_node_hadoop_claster']['java']['java_home']
-
 bash "append JAVA_HOME to /home/#{hduser}/.bashrc" do
   user hduser
   code <<-EOS
       echo "export JAVA_HOME=#{node['single_node_hadoop_claster']['java']['java_home']}" >> /home/#{hduser}/.bashrc
+      source /home/#{hduser}/.bashrc
   EOS
   not_if "grep -q JAVA_HOME /home/#{hduser}/.bashrc"
 end
@@ -143,11 +160,3 @@ execute "format namenode" do
   not_if { ::File.exists?("/var/hadoop/tmp/dfs/name/") }
 end
 
-# Start hadoop demons ---------------------------------------------------------
-
-execute "start all Hadoop services" do
-  command "/usr/sbin/start-all.sh"
-  user hduser
-  action :run
-  not_if { %w(NameNode SecondaryNameNode DataNode JobTracker TaskTracker).any? { |d| `jps`.match(/#{d}/) } }
-end

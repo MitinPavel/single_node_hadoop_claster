@@ -18,8 +18,7 @@ Tested on:
 Java
 --------
 
-* Hadoop requires Oracle 1.6 JDK/JRE (see http://wiki.apache.org/hadoop/HadoopJavaVersions)
-* See the attirbute section below for `node['single_node_hadoop_claster']['java']['java_home']` attribute
+* Hadoop requires Oracle 1.6 JDK/JRE (see http://wiki.apache.org/hadoop/HadoopJavaVersions). See the attirbute section below for `node['single_node_hadoop_claster']['java']['java_home']` attribute
 
 Attributes
 ==========

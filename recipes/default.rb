@@ -1,5 +1,5 @@
-hduser = node['single_node_hadoop_claster']['user']
-hdgroup = node['single_node_hadoop_claster']['group']
+hduser = node['single_node_hadoop_claster']['user']['name']
+hdgroup = node['single_node_hadoop_claster']['user']['group']
 
 # Create a user and a group ---------------------------------------------------
 
@@ -159,4 +159,3 @@ execute "format namenode" do
   action :run
   not_if { ::File.exists?("/var/hadoop/tmp/dfs/name/") }
 end
-

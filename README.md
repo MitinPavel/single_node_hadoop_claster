@@ -6,6 +6,8 @@ Description
 
 Settings up a Single Node Hadoop Cluster 1.0.3
 
+See [a wrapper cookbook](https://github.com/MitinPavel/single_node_hadoop_claster_wrapper) for a smoother start.
+
 Requirements
 ============
 

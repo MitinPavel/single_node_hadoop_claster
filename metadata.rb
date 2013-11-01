@@ -7,5 +7,3 @@ maintainer       "Pavel Mitin"
 maintainer_email "mitin.pavel@gmail.com"
 
 license          "MIT"
-
-depends          "java"
